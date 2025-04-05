@@ -1,0 +1,64 @@
+﻿@page "/file-upload"
+@using System.Net.Http.Headers
+@using HMI_Demo.Services
+@inject FileUploadService FileUploadService
+@inject ILogger<FileUploadPage> Logger
+@rendermode RenderMode.InteractiveServer
+
+<h3>Caricamento File</h3>
+
+<!-- Aggiunto FormName -->
+<EditForm Model="@this" OnValidSubmit="HandleValidSubmit" enctype="multipart/form-data" FormName="fileUploadForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <InputFile OnChange="OnInputFileChange" class="form-control" />
+        <ValidationMessage For="@(() => fileToUpload)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3" disabled="@(fileToUpload == null)">
+        Carica File
+    </button>
+</EditForm>
+
+@if (uploadResult != null)
+{
+    <div class="alert alert-@(uploadResult.Success ? "success" : "danger") mt-3">
+        @uploadResult.Message
+    </div>
+}
+
+@code {
+    private IBrowserFile? fileToUpload;
+    private UploadResult? uploadResult;
+
+    private void OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        fileToUpload = e.File;
+        uploadResult = null;
+        StateHasChanged();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (fileToUpload == null)
+        {
+            uploadResult = new(false, "Seleziona un file");
+            return;
+        }
+
+        try
+        {
+            var (success, message) = await FileUploadService.UploadFile(fileToUpload);
+            uploadResult = new(success, message);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Errore upload file");
+            uploadResult = new(false, $"Errore: {ex.Message}");
+        }
+    }
+
+    private record UploadResult(bool Success, string Message);
+}
