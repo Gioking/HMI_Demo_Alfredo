@@ -1,0 +1,109 @@
+﻿@using HMI_Demo.Models
+@using HMI_Demo.Store
+@rendermode RenderMode.InteractiveServer
+@inject DemoStateContainer _DemoStateContainer
+@implements IDisposable
+
+<PageTitle>Event Handler 1</PageTitle>
+
+<h1>Event Handler Example 1</h1>
+
+<h2>@headingValue</h2>
+
+<p>Esempio su textbox</p>
+<input type="text" @oninput="OnTextChanged" />
+<p>@headingValue</p>
+
+<ul>
+    @{
+        foreach (var item in itemsList)
+        {
+            <li>
+                @item.id @item.name @item.surname
+                <button @onclick="() => SelectElement(item)">Update</button>
+            </li>
+        }
+    }
+</ul>
+
+<p>
+    @parameterValue
+</p>
+
+<p>
+    <button @onclick="UpdateHeading">
+        Update heading
+    </button>
+</p>
+
+<p>
+    @if (isCheckBoxVisible)
+    {
+        <label>
+            <input type="checkbox" @onchange="CheckChanged" />
+            @checkedMessage
+        </label>
+    }
+</p>
+
+<StateDemoComponent />
+
+@code {
+
+    [Parameter]
+    public string parameterValue { get; set; } = "Default value";
+    private bool isCheckBoxVisible;
+    private bool _hasSubscribed = false;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && !_hasSubscribed)
+        {
+            _DemoStateContainer.OnBooleanValueChanges += SetBooleanStateValue;
+            _hasSubscribed = true;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        FillItems();
+    }
+
+    private List<Item> itemsList = new List<Item>();
+    private string headingValue = "Initial heading";
+    private string checkedMessage = "Not changed yet";
+    private void UpdateHeading() => headingValue = $"New heading ({DateTime.Now})";
+    private void CheckChanged() => checkedMessage = $"Last change {DateTime.Now}";
+
+    private void OnTextChanged(ChangeEventArgs e)
+    {
+        headingValue = e.Value.ToString();
+    }
+
+    private void SelectElement(Item item)
+    {
+        Console.WriteLine($"Selected item: {item.id} {item.name} {item.surname}");
+    }
+
+    private void FillItems()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            var newItem = new Item() { id = i, name = $"Nome_{i}", surname = $"Cognome_{i}" };
+            itemsList.Add(newItem);
+        }
+    }
+
+    private void SetBooleanStateValue()
+    {
+        var value = _DemoStateContainer.Value;
+        Console.WriteLine($"SetBooleanStateValue: {value}");
+    }
+
+    public void Dispose()
+    {
+       _DemoStateContainer.OnBooleanValueChanges -= SetBooleanStateValue;
+    }
+
+
+}

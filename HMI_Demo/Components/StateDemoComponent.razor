@@ -1,0 +1,17 @@
+﻿@using HMI_Demo.Store
+@rendermode RenderMode.InteractiveServer
+<h3>StateDemoComponent</h3>
+@inject DemoStateContainer _DemoStateContainer
+
+<label>Testa lo state container</label>
+
+<button @onclick="() => SetBooleanValueState(true)">Set bool value</button>
+
+@code {
+
+    private void SetBooleanValueState(bool value)
+    {
+        _DemoStateContainer.SetBooleanValue(value);
+    }
+
+}
