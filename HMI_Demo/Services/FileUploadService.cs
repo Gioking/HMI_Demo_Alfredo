@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components.Forms;
+using Newtonsoft.Json;
 using RestSharp;
 using System.Net;
 
@@ -23,10 +24,21 @@ namespace HMI_Demo.Services
                 ms.Position = 0;
 
                 var client = new RestClient("https://localhost:7079/"); 
-                var request = new RestRequest("api/Fs/FileUpload", Method.Post);
-                request.AlwaysMultipartFormData = true;
+                var request = new RestRequest("api/Fs/SaveWordDocumentAsFile", Method.Post);
+                //request.AlwaysMultipartFormData = true;
 
-                request.AddFile("file", ms.ToArray(), file.Name, file.ContentType);
+                byte[] byteArray = ms.ToArray();
+                string base64String = Convert.ToBase64String(byteArray);
+
+                var parameters = new
+                {
+                    Base64String = base64String,
+                    DocName = file.Name
+                };
+                string json = JsonConvert.SerializeObject(parameters);
+                request.AddParameter("application/json", json, ParameterType.RequestBody);
+
+                //request.AddFile("file", ms.ToArray(), file.Name, file.ContentType);
 
                 var response = await client.ExecuteAsync(request);
 

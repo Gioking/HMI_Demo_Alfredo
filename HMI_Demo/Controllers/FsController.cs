@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using HMI_Demo.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace HMI_Demo.Controllers
 {
@@ -8,11 +9,13 @@ namespace HMI_Demo.Controllers
     {
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<FsController> _logger;
+        private readonly IConfiguration _configuration; 
 
-        public FsController(IWebHostEnvironment environment, ILogger<FsController> logger)
+        public FsController(IWebHostEnvironment environment, ILogger<FsController> logger, IConfiguration configuration )
         {
             _environment = environment;
             _logger = logger;
+            _configuration = configuration;
         }
 
         [HttpPost("FileUpload")]
@@ -72,5 +75,46 @@ namespace HMI_Demo.Controllers
             public IActionResult Ping() => Ok("Pong");
         }
 
+
+        [HttpPost(Name = "SaveWordDocumentAsFile")]
+        public async Task<IActionResult> SaveWordDocumentAsFile([FromBody] ValueModel model)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest("Invalid parameters");
+
+                string fileName = model.DocName;
+
+                // Specifica il percorso (path) dove salvare il file
+                //string directoryPath = @"C:\Temp\Uploads"; // Sostituisci con il tuo percorso
+                string directoryPath = _configuration["FileStorageSettings:UploadPath"];
+                string fullPath = Path.Combine(directoryPath, fileName!);
+
+                // Crea la directory se non esiste
+                if (!Directory.Exists(directoryPath))
+                    Directory.CreateDirectory(directoryPath);
+
+                byte[] data = Convert.FromBase64String(model.Base64String!);
+                Stream stream = new MemoryStream(data);
+                model.Base64String = null;
+
+                // Salva il file nel percorso specificato
+                using (var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write))
+                    await stream.CopyToAsync(fileStream);
+
+                stream.Close();
+
+                return Ok(fullPath); // Restituisce il percorso completo del file salvato
+            }
+            catch (Exception ex)
+            {
+                string msg = ex.Message;
+                return BadRequest(msg);
+            }
+
+        }
+
     }
+
 }
